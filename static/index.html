@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POE Analyzer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f4fb;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ── Upload screen ── */
+    #upload-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1F4E79;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: #2E75B6; }
+    .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 36px;
+    }
+    .upload-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 36px;
+      width: 100%;
+      max-width: 560px;
+    }
+    .drop-zone {
+      border: 2px dashed #B0C8E8;
+      border-radius: 10px;
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #f8fafd;
+      margin-bottom: 16px;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #2E75B6;
+      background: #EBF5FB;
+    }
+    .drop-icon { font-size: 36px; margin-bottom: 10px; }
+    .drop-title { font-size: 15px; font-weight: 600; color: #1F4E79; margin-bottom: 4px; }
+    .drop-hint { font-size: 12px; color: #888; }
+    #file-input { display: none; }
+
+    .file-list {
+      list-style: none;
+      margin-bottom: 16px;
+    }
+    .file-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      background: #f0f4fb;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+    .file-list .remove {
+      margin-left: auto;
+      cursor: pointer;
+      color: #aaa;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .file-list .remove:hover { color: #e74c3c; }
+    .file-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .badge-csv { background: #D5F5E3; color: #1E8449; }
+    .badge-img { background: #D6EAF8; color: #1A5276; }
+    .badge-txt { background: #FDEBD0; color: #784212; }
+
+    .api-key-row {
+      margin-bottom: 12px;
+    }
+    .api-key-row input {
+      width: 100%;
+      border: 1px solid #d0d8e4;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-family: monospace;
+      color: #333;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .api-key-row input:focus { border-color: #2E75B6; }
+    .api-key-row input::placeholder { color: #aaa; font-family: sans-serif; }
+
+    .btn-analyze {
+      width: 100%;
+      background: #1F4E79;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-analyze:hover:not(:disabled) { background: #164069; }
+    .btn-analyze:disabled { background: #a0b8cc; cursor: not-allowed; }
+
+    .hint-box {
+      margin-top: 20px;
+      background: #EBF5FB;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 12px;
+      color: #1F4E79;
+      line-height: 1.6;
+    }
+    .hint-box strong { display: block; margin-bottom: 4px; font-size: 13px; }
+
+    /* ── Progress screen ── */
+    #progress-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .progress-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid #D6E4F0;
+      border-top-color: #2E75B6;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 24px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-title { font-size: 18px; font-weight: 700; color: #1F4E79; margin-bottom: 8px; }
+    .progress-step { font-size: 14px; color: #666; min-height: 20px; }
+    .progress-bar-wrap {
+      background: #e8ecf0;
+      border-radius: 4px;
+      height: 6px;
+      margin-top: 24px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #2E75B6, #1F4E79);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+      width: 5%;
+    }
+
+    /* ── Report screen ── */
+    #report-screen {
+      display: none;
+    }
+    .report-toolbar {
+      background: #1F4E79;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .report-toolbar .title {
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      flex: 1;
+    }
+    .btn-toolbar {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-toolbar:hover { background: rgba(255,255,255,0.25); }
+    .btn-toolbar.primary { background: #fff; color: #1F4E79; }
+    .btn-toolbar.primary:hover { background: #e8f0f8; }
+    .report-content { padding: 0; }
+    .report-content iframe {
+      width: 100%;
+      border: none;
+      min-height: 100vh;
+    }
+
+    /* ── Error toast ── */
+    #error-toast {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #e74c3c;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 999;
+      max-width: 500px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Upload screen ── -->
+<div id="upload-screen">
+  <div class="logo">POE <span>Analyzer</span></div>
+  <div class="subtitle">Amazon Product Opportunity Explorer — анализ ниши</div>
+
+  <div class="upload-card">
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-icon">📂</div>
+      <div class="drop-title">Перетащите файлы сюда или нажмите для выбора</div>
+      <div class="drop-hint">CSV, PNG, JPG, TXT — любая комбинация</div>
+      <input type="file" id="file-input" multiple
+             accept=".csv,.xlsx,.png,.jpg,.jpeg,.webp,.txt,.docx">
+    </div>
+
+    <ul class="file-list" id="file-list"></ul>
+
+    <div class="api-key-row">
+      <input type="password" id="api-key-input" placeholder="OpenAI API Key (sk-...)"
+             autocomplete="off" spellcheck="false">
+      <div style="font-size:11px;color:#888;margin-top:6px;padding-left:2px;">Ключ не сохраняется и нигде не передаётся, кроме запроса к OpenAI API.</div>
+    </div>
+
+    <button class="btn-analyze" id="btn-analyze" disabled>
+      Проанализировать
+    </button>
+
+    <div class="hint-box">
+      <strong>Какие файлы загружать:</strong>
+      CSV: Products Tab, Search Terms Tab<br>
+      PNG/JPG: скриншоты Competition, Demand Chart, Topic Impact, Returns<br>
+      TXT: Chrome Extension export или AI Text Report
+    </div>
+  </div>
+</div>
+
+<!-- ── Progress screen ── -->
+<div id="progress-screen">
+  <div class="progress-card">
+    <div class="spinner"></div>
+    <div class="progress-title">Анализируем нишу…</div>
+    <div style="font-size:13px;color:#999;margin-bottom:12px;">Анализ занимает от 3 до 5 минут</div>
+    <div class="progress-step" id="progress-step">Загрузка файлов…</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Report screen ── -->
+<div id="report-screen">
+  <div class="report-toolbar">
+    <span class="title" id="report-title">Анализ ниши</span>
+    <button class="btn-toolbar" id="btn-new">+ Новый анализ</button>
+  </div>
+  <div class="report-content">
+    <iframe id="report-frame" title="Отчёт"></iframe>
+  </div>
+</div>
+
+<!-- ── Error toast ── -->
+<div id="error-toast"></div>
+
+<script>
+  let selectedFiles = [];
+  let nicheName = "";
+
+  const apiKeyInput = document.getElementById("api-key-input");
+
+  const dropZone = document.getElementById("drop-zone");
+  const fileInput = document.getElementById("file-input");
+  const fileList = document.getElementById("file-list");
+  const btnAnalyze = document.getElementById("btn-analyze");
+
+  // ── File badge helper ──────────────────────────────────────────────────────
+  function fileBadge(name) {
+    const ext = name.split(".").pop().toLowerCase();
+    if (["csv", "xlsx"].includes(ext)) return ["CSV", "csv"];
+    if (["png", "jpg", "jpeg", "webp"].includes(ext)) return ["IMG", "img"];
+    return ["TXT", "txt"];
+  }
+
+  function renderFileList() {
+    fileList.innerHTML = "";
+    selectedFiles.forEach((f, i) => {
+      const [label, cls] = fileBadge(f.name);
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <span class="file-badge badge-${cls}">${label}</span>
+        <span>${f.name}</span>
+        <span class="remove" data-idx="${i}">✕</span>`;
+      fileList.appendChild(li);
+    });
+    btnAnalyze.disabled = selectedFiles.length === 0;
+  }
+
+  fileList.addEventListener("click", (e) => {
+    const btn = e.target.closest(".remove");
+    if (btn) {
+      selectedFiles.splice(parseInt(btn.dataset.idx), 1);
+      renderFileList();
+    }
+  });
+
+  function addFiles(files) {
+    for (const f of files) {
+      if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
+        selectedFiles.push(f);
+      }
+    }
+    renderFileList();
+  }
+
+  dropZone.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => { addFiles(fileInput.files); fileInput.value = ""; });
+
+  dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    addFiles(e.dataTransfer.files);
+  });
+
+  // ── Progress helpers ───────────────────────────────────────────────────────
+  const steps = [
+    [10, "Определение типов файлов…"],
+    [25, "Парсинг CSV данных…"],
+    [45, "Обработка скриншотов через Claude Vision…"],
+    [60, "Анализ текстовых источников…"],
+    [75, "Кросс-референс данных…"],
+    [88, "Синтез дашборда…"],
+    [97, "Формирование дашборда…"],
+  ];
+  let stepIdx = 0;
+  let progressTimer = null;
+
+  function startProgress() {
+    stepIdx = 0;
+    setProgress(steps[0][0], steps[0][1]);
+    progressTimer = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, steps.length - 1);
+      setProgress(steps[stepIdx][0], steps[stepIdx][1]);
+      if (stepIdx === steps.length - 1) clearInterval(progressTimer);
+    }, 5000);
+  }
+
+  function setProgress(pct, msg) {
+    document.getElementById("progress-bar").style.width = pct + "%";
+    document.getElementById("progress-step").textContent = msg;
+  }
+
+  function showScreen(id) {
+    ["upload-screen", "progress-screen", "report-screen"].forEach(s => {
+      document.getElementById(s).style.display = s === id ? "flex" : "none";
+    });
+    if (id === "report-screen") {
+      document.getElementById("report-screen").style.display = "block";
+    }
+  }
+
+  function showError(msg) {
+    const toast = document.getElementById("error-toast");
+    toast.textContent = msg;
+    toast.style.display = "block";
+    setTimeout(() => { toast.style.display = "none"; }, 6000);
+  }
+
+  // ── Analyze ────────────────────────────────────────────────────────────────
+  btnAnalyze.addEventListener("click", async () => {
+    if (selectedFiles.length === 0) return;
+
+    const apiKey = apiKeyInput.value.trim();
+    if (!apiKey) { showError("Введите Anthropic API Key"); return; }
+    showScreen("progress-screen");
+    startProgress();
+
+    const formData = new FormData();
+    selectedFiles.forEach(f => formData.append("files[]", f));
+    formData.append("api_key", apiKey);
+
+    try {
+      const resp = await fetch("/analyze", { method: "POST", body: formData });
+      clearInterval(progressTimer);
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+
+      nicheName = data.niche_name || "Анализ ниши";
+
+      // Show report
+      document.getElementById("report-title").textContent = nicheName || "Анализ ниши";
+      const frame = document.getElementById("report-frame");
+      frame.srcdoc = data.html || "<p>Пустой отчёт</p>";
+
+      // Resize iframe after load
+      frame.onload = () => {
+        try {
+          frame.style.height = frame.contentDocument.body.scrollHeight + 40 + "px";
+        } catch(e) {}
+      };
+
+      showScreen("report-screen");
+
+      // Show parse errors if any
+      if (data.errors && data.errors.length > 0) {
+        showError("Предупреждения: " + data.errors.join("; "));
+      }
+
+    } catch (err) {
+      clearInterval(progressTimer);
+      showScreen("upload-screen");
+      showError("Ошибка анализа: " + err.message);
+    }
+  });
+
+  // ── New analysis ───────────────────────────────────────────────────────────
+  document.getElementById("btn-new").addEventListener("click", () => {
+    selectedFiles = [];
+    nicheName = "";
+    renderFileList();
+    showScreen("upload-screen");
+  });
+</script>
+</body>
+</html>
