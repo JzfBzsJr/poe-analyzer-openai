@@ -279,6 +279,11 @@ def build_html(
 {sections_html}
 {priorities_html}
 
+<script>
+document.querySelectorAll('.card-body,.section-intro,.highlight-box-text,.priority-text,.cover-subtitle').forEach(function(el){{
+  el.innerHTML = el.innerHTML.replace(/\b(\d{{5,}})\b/g, function(m){{ return Number(m).toLocaleString('en-US'); }});
+}});
+</script>
 </body>
 </html>"""
 

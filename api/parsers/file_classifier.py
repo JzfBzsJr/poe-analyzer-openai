@@ -24,18 +24,12 @@ def classify(filename: str, content_bytes: bytes) -> str:
     if name_lower.endswith(".csv"):
         try:
             text = content_bytes.decode("utf-8", errors="replace")
-            header = _first_nonempty_line(text).lower()
-            if "search term" in header and any(k in header for k in ("click share", "search volume", "total count", "growth", "conversion")):
-                return "search_terms_csv"
-            if "asin" in header and ("niche click count" in header or "click share" in header or "avg. best seller rank" in header):
-                return "products_csv"
-            # Fallback: check second line too
             lines = [l for l in text.splitlines() if l.strip()]
-            if len(lines) > 1:
-                second = lines[1].lower()
-                if "search term" in second:
+            for line in lines[:20]:
+                lower = line.lower().lstrip("\ufeff")
+                if "search term" in lower and any(k in lower for k in ("click share", "search volume", "total count", "growth", "conversion")):
                     return "search_terms_csv"
-                if "asin" in second:
+                if "asin" in lower and ("niche click count" in lower or "click share" in lower or "avg. best seller rank" in lower):
                     return "products_csv"
         except Exception:
             pass
