@@ -280,9 +280,16 @@ def build_html(
 {priorities_html}
 
 <script>
-document.querySelectorAll('.card-body,.section-intro,.highlight-box-text,.priority-text,.cover-subtitle').forEach(function(el){{
-  el.innerHTML = el.innerHTML.replace(/\b(\d{{5,}})\b/g, function(m){{ return Number(m).toLocaleString('en-US'); }});
-}});
+(function(){{
+  function walk(node){{
+    if(node.nodeType===3){{
+      node.textContent=node.textContent.replace(/\b(\d{{5,}})\b/g,function(m){{return Number(m).toLocaleString('en-US');}});
+    }}else{{
+      for(var i=0;i<node.childNodes.length;i++)walk(node.childNodes[i]);
+    }}
+  }}
+  walk(document.body);
+}})();
 </script>
 </body>
 </html>"""
