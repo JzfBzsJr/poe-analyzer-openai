@@ -42,7 +42,7 @@ def _call_claude(prompt: str, image_bytes: bytes, filename: str, api_key: str) -
     client = _get_client(api_key)
     response = client.chat.completions.create(
         model="gpt-5.4",
-        max_tokens=2048,
+        max_completion_tokens=2048,
         messages=[{
             "role": "user",
             "content": [

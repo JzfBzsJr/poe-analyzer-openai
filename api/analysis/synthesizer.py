@@ -97,7 +97,7 @@ def _call_claude(prompt: str, api_key: str) -> dict:
     client = _get_client(api_key)
     response = client.chat.completions.create(
         model="gpt-5.4",
-        max_tokens=4096,
+        max_completion_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     )
     return _extract_json(response.choices[0].message.content.strip())
