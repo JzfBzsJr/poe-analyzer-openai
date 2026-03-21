@@ -168,8 +168,12 @@ def _v(row, col_map, key):
 
 
 def _find_header_idx(lines, marker):
+    """Return index of the header row where marker is a standalone CSV field (not a substring)."""
+    pattern = re.compile(
+        r'(?:^|,)\s*"?' + re.escape(marker.lower()) + r'"?\s*(?:,|$)'
+    )
     for i, line in enumerate(lines):
-        if marker.lower() in line.lower():
+        if pattern.search(line.strip().lstrip("\ufeff").lower()):
             return i
     return 0
 
