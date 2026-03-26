@@ -283,7 +283,7 @@ def build_html(
 (function(){{
   function walk(node){{
     if(node.nodeType===3){{
-      node.textContent=node.textContent.replace(/\b(\d{{5,}})\b/g,function(m){{return Number(m).toLocaleString('en-US');}});
+      node.textContent=node.textContent.replace(/\b(\d{{5,}})\b/g,function(m){{return Number(m).toLocaleString('de-DE');}});
     }}else{{
       for(var i=0;i<node.childNodes.length;i++)walk(node.childNodes[i]);
     }}
