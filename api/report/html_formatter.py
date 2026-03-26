@@ -2,6 +2,16 @@
 Dashboard HTML renderer — builds a rich visual dashboard from structured JSON data.
 """
 import html as html_lib
+import re as _re
+
+
+def _fmt(text) -> str:
+    """Format 5+ digit integers with dots as thousands separator: 1592634 → 1.592.634"""
+    if not text:
+        return str(text) if text is not None else ""
+    def _rep(m):
+        return f"{int(m.group(0)):,}".replace(",", ".")
+    return _re.sub(r'\b\d{5,}\b', _rep, str(text))
 
 _CSS = """
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -129,8 +139,8 @@ def _render_card(card: dict) -> str:
     return (
         f'<div class="{cls}">'
         f'<div class="card-icon">{_e(card.get("icon",""))}</div>'
-        f'<div class="card-title">{_e(card.get("title",""))}</div>'
-        f'<div class="card-body">{_e(card.get("body",""))}</div>'
+        f'<div class="card-title">{_e(_fmt(card.get("title","")))}</div>'
+        f'<div class="card-body">{_e(_fmt(card.get("body","")))}</div>'
         f"</div>"
     )
 
@@ -143,7 +153,7 @@ def _render_highlight(hl: dict) -> str:
     return (
         f'<div class="{cls}">'
         f'<div class="highlight-box-label">{_e(hl.get("label",""))}</div>'
-        f'<div class="highlight-box-text">{_e(hl.get("text",""))}</div>'
+        f'<div class="highlight-box-text">{_e(_fmt(hl.get("text","")))}</div>'
         f"</div>"
     )
 
@@ -158,7 +168,7 @@ def _render_section(section: dict) -> str:
     else:
         heading_html = _e(heading)
 
-    intro = _e(section.get("intro", ""))
+    intro = _e(_fmt(section.get("intro", "")))
     cards_html = "".join(_render_card(c) for c in section.get("cards", []))
     highlight_html = _render_highlight(section.get("highlight"))
 
@@ -201,8 +211,8 @@ def _render_priorities(priorities: list) -> str:
             '<div class="priority-card">'
             f'<div class="priority-num">#{_e(p.get("num",""))}</div>'
             '<div class="priority-content">'
-            f'<div class="priority-title">{_e(p.get("title",""))}</div>'
-            f'<div class="priority-text">{_e(p.get("text",""))}</div>'
+            f'<div class="priority-title">{_e(_fmt(p.get("title","")))}</div>'
+            f'<div class="priority-text">{_e(_fmt(p.get("text","")))}</div>'
             "</div></div>"
         )
     return (
@@ -266,7 +276,7 @@ def build_html(
       {niche_line1}
       <span class="accent">{niche_line2}</span>
     </h1>
-    <p class="cover-subtitle">{_e(cover_subtitle)}</p>
+    <p class="cover-subtitle">{_e(_fmt(cover_subtitle))}</p>
   </div>
   <div class="cover-meta">
     <span>POE Analysis Brain</span>
@@ -279,18 +289,6 @@ def build_html(
 {sections_html}
 {priorities_html}
 
-<script>
-(function(){{
-  function walk(node){{
-    if(node.nodeType===3){{
-      node.textContent=node.textContent.replace(/\b(\d{{5,}})\b/g,function(m){{return Number(m).toLocaleString('de-DE');}});
-    }}else{{
-      for(var i=0;i<node.childNodes.length;i++)walk(node.childNodes[i]);
-    }}
-  }}
-  walk(document.body);
-}})();
-</script>
 </body>
 </html>"""
 
